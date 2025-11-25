@@ -41,7 +41,7 @@ ID: {self.task_id}
             file_contexts = ""
             for file_path in self.task.linked_files:
                 try:
-                    file_content = TOOLS_REGISTRY["read_file"](path=file_path)
+                    file_content = TOOLS_REGISTRY["read_file"](path=file_path, start_line=1, max_lines=400)
                     if "Error" in file_content: # Check for error string from read_file
                         file_contexts += f"\n--- File: {file_path} (Error reading file) ---\n{file_content}\n"
                     else:

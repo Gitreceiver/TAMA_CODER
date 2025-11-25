@@ -22,7 +22,14 @@ DEEPSEEK_GENERAL_MODEL = os.getenv('DEEPSEEK_GENERAL_MODEL', 'deepseek-chat')
 DEEPSEEK_REASONING_MODEL = os.getenv('DEEPSEEK_REASONING_MODEL', 'deepseek-reasoner')
 
 # --- 数据库设置 ---
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///:memory:')
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///tama.db')
+# 从 DATABASE_URL 推导本地 SQLite 路径，供备份等使用
+if DATABASE_URL.startswith("sqlite:///"):
+    DB_PATH = DATABASE_URL.replace("sqlite:///", "", 1)
+elif DATABASE_URL == "sqlite:///:memory:":
+    DB_PATH = os.path.join(os.getcwd(), "tama.db")
+else:
+    DB_PATH = os.path.join(os.getcwd(), "tama.db")
 
 # --- AI 通用设置 ---
 # AI 响应最大 token 数
@@ -67,6 +74,7 @@ class Settings:
         self.DEEPSEEK_GENERAL_MODEL = DEEPSEEK_GENERAL_MODEL
         self.DEEPSEEK_REASONING_MODEL = DEEPSEEK_REASONING_MODEL
         self.DATABASE_URL = DATABASE_URL
+        self.DB_PATH = DB_PATH
         self.AI_MAX_TOKENS = AI_MAX_TOKENS
         self.AI_TEMPERATURE = AI_TEMPERATURE
         self.TASKS_DIR_PATH = TASKS_DIR_PATH

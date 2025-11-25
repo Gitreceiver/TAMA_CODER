@@ -21,6 +21,8 @@ import src.ai.tools.filesystem # Import to register tools
 import src.ai.tools.terminal   # Import to register tools
 import src.ai.tools.git         # Import to register tools
 import asyncio # Import asyncio
+from src.ai.utils.backup import BackupManager
+import task_manager.storage_sqlite as storage_sqlite
 
 
 # Configure logging
@@ -424,6 +426,29 @@ def remove_command(
             title="[bold yellow]⚠️ 部分删除失败[/bold yellow]",
             border_style="yellow"
         ))
+
+
+@app.command(name="undo", help="撤销指定任务最近一次由 AI 工具造成的文件修改（基于备份快照）。")
+def undo_last_operation(
+    task_id: str = typer.Argument(..., help="Task ID for which to undo the last operation.")
+):
+    """使用 BackupManager 恢复最近一次快照，需该任务此前有备份记录。"""
+    try:
+        storage_sqlite.initialize_database()
+    except Exception as exc:
+        ui.console.print(Panel(f"[bold red]Failed to initialize database: {exc}[/bold red]", title="[bold red]Error[/bold red]", border_style="red"))
+        raise typer.Exit(code=1)
+
+    bm = BackupManager(db_path=settings.DB_PATH)
+    try:
+        result = bm.undo_last_operation(int(task_id))
+        if result.startswith("Success"):
+            ui.console.print(Panel(result, title="[bold green]Undo Applied[/bold green]", border_style="green"))
+        else:
+            ui.console.print(Panel(result, title="[bold yellow]Undo Result[/bold yellow]", border_style="yellow"))
+    except Exception as exc:
+        ui.console.print(Panel(f"[bold red]Undo failed: {exc}[/bold red]", title="[bold red]Error[/bold red]", border_style="red"))
+        raise typer.Exit(code=1)
 
 
 # --- AI Powered Commands ---
