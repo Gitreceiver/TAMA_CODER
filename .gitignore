@@ -50,5 +50,9 @@ README_back.md
 .clinerules
 .claude
 
-#sqlite
+#docs and sqlite
 tama.db
+docs/
+progress.md
+pyproject.toml.bck
+

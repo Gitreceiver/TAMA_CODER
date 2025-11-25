@@ -25,13 +25,32 @@ def with_backup(func):
     return wrapper
 
 @register_tool
-def read_file(path: str) -> str:
-    """读取文件内容。必须提供相对路径。"""
+def read_file(path: str, start_line: int = 1, max_lines: int = 400) -> str:
+    """
+    读取文件内容（可选行范围）。默认最多返回 400 行，防止上下文过大。
+    """
     if not os.path.exists(path):
         return f"Error: File {path} not found."
-    with open(path, "r", encoding="utf-8") as f:
-        # TODO: 这里未来可以加 Token 限制，大文件只读部分
-        return f.read()
+    if start_line < 1:
+        return "Error: start_line must be >= 1."
+    if max_lines <= 0:
+        return "Error: max_lines must be > 0."
+
+    lines: list[str] = []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for i, line in enumerate(f, start=1):
+                if i < start_line:
+                    continue
+                lines.append(line)
+                if len(lines) >= max_lines:
+                    lines.append("\n...[truncated]...\n")
+                    break
+        return "".join(lines)
+    except UnicodeDecodeError:
+        return f"Error: File {path} is not UTF-8 text."
+    except Exception as exc:
+        return f"Error reading file {path}: {exc}"
 
 @register_tool
 @with_backup

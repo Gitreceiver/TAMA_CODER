@@ -1,5 +1,32 @@
 import inspect
-from typing import Callable, Dict, Any, List
+from typing import Callable, Dict, Any, List, get_origin, get_args
+
+_TYPE_MAP = {
+    str: "string",
+    int: "integer",
+    float: "number",
+    bool: "boolean",
+}
+
+
+def _schema_type_from_annotation(annotation: Any) -> Dict[str, Any]:
+    """Convert a Python type annotation to a JSON schema fragment."""
+    if annotation in _TYPE_MAP:
+        return {"type": _TYPE_MAP[annotation]}
+
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+
+    # Optional[T] -> Union[T, NoneType]
+    if origin is list and args:
+        item_type = _TYPE_MAP.get(args[0], "string")
+        return {"type": "array", "items": {"type": item_type}}
+    if origin is dict and len(args) == 2:
+        # simplified object map
+        return {"type": "object", "additionalProperties": True}
+
+    # Fallback
+    return {"type": "string"}
 
 TOOLS_REGISTRY: Dict[str, Callable] = {}
 TOOLS_SCHEMAS: List[Dict[str, Any]] = []
@@ -16,13 +43,9 @@ def register_tool(func):
         "required": []
     }
     for name, param in sig.parameters.items():
-        param_type = "string" # 简化处理，默认 string
-        if param.annotation == int: param_type = "integer"
-
-        parameters["properties"][name] = {
-            "type": param_type,
-            "description": f"Parameter {name}"
-        }
+        schema_entry = _schema_type_from_annotation(param.annotation)
+        schema_entry["description"] = f"Parameter {name}"
+        parameters["properties"][name] = schema_entry
         if param.default == inspect.Parameter.empty:
             parameters["required"].append(name)
 
